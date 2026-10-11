@@ -1,0 +1,249 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Super Mario - Juego Arcade</title>
+    
+    <!-- Estilos del juego original -->
+    <link href="Content/style.css" rel="stylesheet" />
+    
+    <!-- Tailwind CSS y Fuentes -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka+One&display=swap" rel="stylesheet">
+    
+    <style>
+        .font-arcade { font-family: 'Press Start 2P', cursive; }
+        .font-game { font-family: 'Fredoka One', cursive; }
+
+        @keyframes neonGlow {
+            0%, 100% { box-shadow: 0 0 15px #FFD700, 0 0 30px #FF4500, inset 0 0 15px #FFD700; }
+            50% { box-shadow: 0 0 25px #FFD700, 0 0 50px #FF4500, inset 0 0 25px #FFD700; }
+        }
+
+        .mario-btn {
+            animation: neonGlow 2s infinite alternate;
+            transition: all 0.2s ease-in-out;
+            touch-action: manipulation;
+        }
+
+        .mario-btn:hover { transform: scale(1.08) translateY(-4px); }
+        .mario-btn:active { transform: scale(0.96) translateY(2px); }
+
+        .scanlines {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0, 0, 0, 0.25) 50%,
+                rgba(0, 0, 0, 0.25)
+            );
+            background-size: 100% 4px;
+        }
+
+        .mario-title-text {
+            background: linear-gradient(180deg, #FFD500 0%, #FF2A00 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0px 5px 0px #7A0000;
+            filter: drop-shadow(0 0 20px rgba(255, 213, 0, 0.4));
+        }
+
+        /* Ocultar pantalla de juego por defecto */
+        #game-screen {
+            display: none !important;
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background-color: #000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Controles táctiles móviles */
+        .mobile-controls {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            z-index: 99999;
+            justify-content: space-between;
+            padding: 0 20px;
+            pointer-events: none;
+        }
+
+        .touch-btn {
+            pointer-events: auto;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        @media (max-width: 1024px) {
+            .mobile-controls { display: flex; }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-white min-h-screen overflow-hidden select-none">
+
+    <!-- ==================== PANTALLA DE INICIO (PORTADA) ==================== -->
+    <div id="start-screen" class="h-screen w-screen flex items-center justify-center relative bg-gradient-to-br from-slate-950 via-purple-950 to-red-950">
+        <canvas id="particleCanvas" class="absolute inset-0 z-0 pointer-events-none"></canvas>
+        <div class="absolute inset-0 pointer-events-none scanlines opacity-30 z-10"></div>
+
+        <div class="relative z-20 flex flex-col items-center justify-center p-6 text-center max-w-xl mx-auto">
+            <div class="mb-8 transform -rotate-1">
+                <span class="font-arcade text-xs tracking-widest text-yellow-400 block mb-2 uppercase">★ Edición Arcade ★</span>
+                <h1 class="font-game text-5xl md:text-7xl uppercase tracking-wide mario-title-text drop-shadow-2xl">
+                    SUPER MARIO
+                </h1>
+            </div>
+
+            <button id="playBtn" onclick="startGame()" class="mario-btn relative group cursor-pointer bg-gradient-to-r from-red-600 via-red-500 to-yellow-500 text-white font-arcade text-xl md:text-2xl px-10 py-6 rounded-2xl border-4 border-yellow-300 shadow-2xl flex items-center gap-4">
+                <span class="text-3xl animate-bounce">🍄</span>
+                <span class="tracking-wider text-yellow-100 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">PLAY MARIO</span>
+                <span class="text-3xl animate-bounce">⭐</span>
+            </button>
+
+            <div class="mt-10 bg-slate-900/80 backdrop-blur border border-slate-700/60 rounded-xl p-4 text-xs font-arcade text-slate-300 max-w-sm">
+                <p class="text-yellow-400 mb-2 font-bold">CONTROLES:</p>
+                <div class="grid grid-cols-2 gap-2 text-left">
+                    <div>💻 <span class="text-white">PC:</span> Teclas ◄ ► / Arriba</div>
+                    <div>📱 <span class="text-white">Móvil:</span> Botones Táctiles</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== PANTALLA DEL JUEGO ==================== -->
+    <div id="game-screen">
+        <div id="game">
+            <div id="world"></div>
+            <div id="coinNumber" class="gauge">0</div>
+            <div id="coin" class="gaugeSprite"></div>
+            <div id="liveNumber" class="gauge">0</div>
+            <div id="live" class="gaugeSprite"></div>
+        </div>
+
+        <div id="audio-container"></div>
+
+        <!-- CONTROLES TÁCTILES -->
+        <div class="mobile-controls">
+            <div class="flex gap-3">
+                <button id="btn-left" class="touch-btn w-16 h-16 bg-slate-800/80 active:bg-red-600 text-white font-bold text-2xl rounded-full border-2 border-slate-400 flex items-center justify-center shadow-lg active:scale-95">◀</button>
+                <button id="btn-right" class="touch-btn w-16 h-16 bg-slate-800/80 active:bg-red-600 text-white font-bold text-2xl rounded-full border-2 border-slate-400 flex items-center justify-center shadow-lg active:scale-95">▶</button>
+            </div>
+            
+            <div class="flex gap-3">
+                <button id="btn-b" class="touch-btn w-16 h-16 bg-yellow-600/80 active:bg-yellow-500 text-white font-arcade text-lg rounded-full border-2 border-yellow-300 flex items-center justify-center shadow-lg active:scale-95">B</button>
+                <button id="btn-a" class="touch-btn w-16 h-16 bg-red-600/80 active:bg-red-500 text-white font-arcade text-lg rounded-full border-2 border-yellow-300 flex items-center justify-center shadow-lg active:scale-95">A</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts del Juego Mario -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="Scripts/jQuery.js"><\/script>')</script>
+    <script src="Scripts/testlevels.js"></script>
+    <script src="Scripts/oop.js"></script>
+    <script src="Scripts/keys.js"></script>
+    <script src="Scripts/constants.js"></script>
+    <script src="Scripts/main.js"></script>
+
+    <!-- Script de Control -->
+    <script>
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            const gameScreen = document.getElementById('game-screen');
+            gameScreen.setAttribute('style', 'display: flex !important');
+
+            document.getElementById('audio-container').innerHTML = `
+                <iframe width="0" height="0" src="https://www.youtube.com/embed/SB1VqLCTFpA?rel=0&autoplay=1" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+            `;
+
+            window.dispatchEvent(new Event('resize'));
+        }
+
+        // Partículas
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 4 + 2;
+                this.speedY = -(Math.random() * 1 + 0.5);
+                this.color = Math.random() > 0.5 ? '#FFD700' : '#FF4500';
+                this.opacity = Math.random() * 0.8 + 0.2;
+            }
+            update() {
+                this.y += this.speedY;
+                if (this.y < 0) {
+                    this.y = canvas.height;
+                    this.x = Math.random() * canvas.width;
+                }
+            }
+            draw() {
+                ctx.globalAlpha = this.opacity;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        for (let i = 0; i < 40; i++) particles.push(new Particle());
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        // Controles táctiles
+        function simulateKeyEvent(type, keyCode) {
+            const event = new KeyboardEvent(type, {
+                bubbles: true,
+                cancelable: true,
+                keyCode: keyCode,
+                which: keyCode
+            });
+            document.dispatchEvent(event);
+            window.dispatchEvent(event);
+        }
+
+        function setupTouchButton(buttonId, keyCode) {
+            const btn = document.getElementById(buttonId);
+            if (!btn) return;
+
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                simulateKeyEvent('keydown', keyCode);
+            });
+
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                simulateKeyEvent('keyup', keyCode);
+            });
+        }
+
+        setupTouchButton('btn-left', 37);
+        setupTouchButton('btn-right', 39);
+        setupTouchButton('btn-a', 38);
+        setupTouchButton('btn-b', 16);
+    </script>
+</body>
+</html>
