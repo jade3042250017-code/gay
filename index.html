@@ -107,14 +107,6 @@
                 <span class="tracking-wider text-yellow-100 drop-shadow-[0_2px_2px_rgba(0,0,0,0.8)]">PLAY MARIO</span>
                 <span class="text-3xl animate-bounce">⭐</span>
             </button>
-
-            <div class="mt-10 bg-slate-900/80 backdrop-blur border border-slate-700/60 rounded-xl p-4 text-xs font-arcade text-slate-300 max-w-sm">
-                <p class="text-yellow-400 mb-2 font-bold">CONTROLES:</p>
-                <div class="grid grid-cols-2 gap-2 text-left">
-                    <div>💻 <span class="text-white">PC:</span> Teclas ◄ ► / Arriba</div>
-                    <div>📱 <span class="text-white">Móvil:</span> Botones Táctiles</div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -138,8 +130,7 @@
             </div>
             
             <div class="flex gap-3">
-                <button id="btn-b" class="touch-btn w-16 h-16 bg-yellow-600/80 active:bg-yellow-500 text-white font-arcade text-lg rounded-full border-2 border-yellow-300 flex items-center justify-center shadow-lg active:scale-95">B</button>
-                <button id="btn-a" class="touch-btn w-16 h-16 bg-red-600/80 active:bg-red-500 text-white font-arcade text-lg rounded-full border-2 border-yellow-300 flex items-center justify-center shadow-lg active:scale-95">A</button>
+                <button id="btn-a" class="touch-btn w-20 h-20 bg-red-600/80 active:bg-red-500 text-white font-arcade text-xl rounded-full border-2 border-yellow-300 flex items-center justify-center shadow-lg active:scale-95">A</button>
             </div>
         </div>
     </div>
@@ -243,7 +234,6 @@
         setupTouchButton('btn-left', 37);
         setupTouchButton('btn-right', 39);
         setupTouchButton('btn-a', 38);
-        setupTouchButton('btn-b', 16);
     </script>
 </body>
 </html>
